@@ -1,3 +1,15 @@
+<script setup>
+import { useRouter } from 'vue-router'
+import { useUserStore } from './stores/user.js'
+
+const router = useRouter()
+const userStore = useUserStore()
+
+const handleLogout = async () => {
+  await userStore.logout()
+  router.push('/login')
+}
+</script>
 <template>
   <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center">
@@ -19,15 +31,3 @@
   </div>
 </template>
 
-<script setup>
-import { useRouter } from 'vue-router'
-import { useUserStore } from './stores/user.js'
-
-const router = useRouter()
-const userStore = useUserStore()
-
-const handleLogout = async () => {
-  await userStore.logout()
-  router.push('/login')
-}
-</script>

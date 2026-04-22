@@ -1,3 +1,147 @@
+<script setup>
+import { ref, computed, onMounted } from 'vue'
+import axios from 'axios'
+import UserFilter from './UserFilter.vue'
+
+const items = ref([])
+const stats = ref({})
+const processors = ref([])
+const videocards = ref([])
+const motherboards = ref([])
+const newItem = ref({ name: '', processor_id: null, videocard_id: null, motherboard_id: null, price: null })
+const editItem = ref({})
+const currentUserId = ref(null)
+
+const filters = ref({
+  name: '',
+  processor: '',
+  videocard: '',
+  motherboard: '',
+  price: ''
+})
+
+const filteredItems = computed(() => {
+  let result = items.value
+  
+  if (filters.value.name) {
+    result = result.filter(item => 
+      item.name.toLowerCase().includes(filters.value.name.toLowerCase())
+    )
+  }
+  
+  if (filters.value.processor) {
+    result = result.filter(item => 
+      item.processor?.name.toLowerCase().includes(filters.value.processor.toLowerCase())
+    )
+  }
+  
+  if (filters.value.videocard) {
+    result = result.filter(item => 
+      item.videocard?.name.toLowerCase().includes(filters.value.videocard.toLowerCase())
+    )
+  }
+  
+  if (filters.value.motherboard) {
+    result = result.filter(item => 
+      item.motherboard?.name.toLowerCase().includes(filters.value.motherboard.toLowerCase())
+    )
+  }
+  
+  if (filters.value.price) {
+    result = result.filter(item => 
+      item.price === parseFloat(filters.value.price)
+    )
+  }
+  
+  return result
+})
+
+const applyFilters = () => {}
+
+const clearFilters = () => {
+  filters.value = { name: '', processor: '', videocard: '', motherboard: '', price: '' }
+}
+
+const fetchItems = async () => {
+  let url = '/api/builds/'
+  if (currentUserId.value) {
+    url += `?user_id=${currentUserId.value}`
+  }
+  const response = await axios.get(url)
+  items.value = response.data
+}
+
+const fetchStats = async () => {
+  let url = '/api/builds/stats/'
+  if (currentUserId.value) {
+    url += `?user_id=${currentUserId.value}`
+  }
+  const response = await axios.get(url)
+  stats.value = response.data
+}
+
+const onFilterChange = (userId) => {
+  currentUserId.value = userId
+  fetchItems()
+  fetchStats()
+}
+
+const fetchProcessors = async () => {
+  const response = await axios.get('/api/processors/')
+  processors.value = response.data
+}
+
+const fetchVideocards = async () => {
+  const response = await axios.get('/api/videocards/')
+  videocards.value = response.data
+}
+
+const fetchMotherboards = async () => {
+  const response = await axios.get('/api/motherboards/')
+  motherboards.value = response.data
+}
+
+const onAdd = async () => {
+  await axios.post('/api/builds/', newItem.value)
+  newItem.value = { name: '', processor_id: null, videocard_id: null, motherboard_id: null, price: null }
+  await fetchItems()
+  await fetchStats()
+}
+
+const onEditClick = (item) => {
+  editItem.value = { ...item, processor_id: item.processor?.id, videocard_id: item.videocard?.id, motherboard_id: item.motherboard?.id }
+}
+
+const onUpdate = async () => {
+  await axios.put(`/api/builds/${editItem.value.id}/`, editItem.value)
+  await fetchItems()
+  await fetchStats()
+}
+
+const onDelete = async (id) => {
+  if (confirm('Удалить?')) {
+    await axios.delete(`/api/builds/${id}/`)
+    await fetchItems()
+    await fetchStats()
+  }
+}
+
+const exportToExcel = () => {
+  let url = '/api/builds/export-excel/'
+  if (currentUserId.value) {
+    url += `?user_id=${currentUserId.value}`
+  }
+  window.open(url, '_blank')
+}
+
+onMounted(() => {
+  fetchItems()
+  fetchStats()
+  fetchProcessors()
+  fetchVideocards()
+  fetchMotherboards()
+})
+</script>
 <template>
   <div class="card">
     <div class="card-header">
@@ -169,147 +313,3 @@
   </div>
 </template>
 
-<script setup>
-import { ref, computed, onMounted } from 'vue'
-import axios from 'axios'
-import UserFilter from './UserFilter.vue'
-
-const items = ref([])
-const stats = ref({})
-const processors = ref([])
-const videocards = ref([])
-const motherboards = ref([])
-const newItem = ref({ name: '', processor_id: null, videocard_id: null, motherboard_id: null, price: null })
-const editItem = ref({})
-const currentUserId = ref(null)
-
-const filters = ref({
-  name: '',
-  processor: '',
-  videocard: '',
-  motherboard: '',
-  price: ''
-})
-
-const filteredItems = computed(() => {
-  let result = items.value
-  
-  if (filters.value.name) {
-    result = result.filter(item => 
-      item.name.toLowerCase().includes(filters.value.name.toLowerCase())
-    )
-  }
-  
-  if (filters.value.processor) {
-    result = result.filter(item => 
-      item.processor?.name.toLowerCase().includes(filters.value.processor.toLowerCase())
-    )
-  }
-  
-  if (filters.value.videocard) {
-    result = result.filter(item => 
-      item.videocard?.name.toLowerCase().includes(filters.value.videocard.toLowerCase())
-    )
-  }
-  
-  if (filters.value.motherboard) {
-    result = result.filter(item => 
-      item.motherboard?.name.toLowerCase().includes(filters.value.motherboard.toLowerCase())
-    )
-  }
-  
-  if (filters.value.price) {
-    result = result.filter(item => 
-      item.price === parseFloat(filters.value.price)
-    )
-  }
-  
-  return result
-})
-
-const applyFilters = () => {}
-
-const clearFilters = () => {
-  filters.value = { name: '', processor: '', videocard: '', motherboard: '', price: '' }
-}
-
-const fetchItems = async () => {
-  let url = '/api/builds/'
-  if (currentUserId.value) {
-    url += `?user_id=${currentUserId.value}`
-  }
-  const response = await axios.get(url)
-  items.value = response.data
-}
-
-const fetchStats = async () => {
-  let url = '/api/builds/stats/'
-  if (currentUserId.value) {
-    url += `?user_id=${currentUserId.value}`
-  }
-  const response = await axios.get(url)
-  stats.value = response.data
-}
-
-const onFilterChange = (userId) => {
-  currentUserId.value = userId
-  fetchItems()
-  fetchStats()
-}
-
-const fetchProcessors = async () => {
-  const response = await axios.get('/api/processors/')
-  processors.value = response.data
-}
-
-const fetchVideocards = async () => {
-  const response = await axios.get('/api/videocards/')
-  videocards.value = response.data
-}
-
-const fetchMotherboards = async () => {
-  const response = await axios.get('/api/motherboards/')
-  motherboards.value = response.data
-}
-
-const onAdd = async () => {
-  await axios.post('/api/builds/', newItem.value)
-  newItem.value = { name: '', processor_id: null, videocard_id: null, motherboard_id: null, price: null }
-  await fetchItems()
-  await fetchStats()
-}
-
-const onEditClick = (item) => {
-  editItem.value = { ...item, processor_id: item.processor?.id, videocard_id: item.videocard?.id, motherboard_id: item.motherboard?.id }
-}
-
-const onUpdate = async () => {
-  await axios.put(`/api/builds/${editItem.value.id}/`, editItem.value)
-  await fetchItems()
-  await fetchStats()
-}
-
-const onDelete = async (id) => {
-  if (confirm('Удалить?')) {
-    await axios.delete(`/api/builds/${id}/`)
-    await fetchItems()
-    await fetchStats()
-  }
-}
-
-const exportToExcel = () => {
-  let url = '/api/builds/export-excel/'
-  if (currentUserId.value) {
-    url += `?user_id=${currentUserId.value}`
-  }
-  window.open(url, '_blank')
-}
-
-onMounted(() => {
-  fetchItems()
-  fetchStats()
-  fetchProcessors()
-  fetchVideocards()
-  fetchMotherboards()
-})
-</script>

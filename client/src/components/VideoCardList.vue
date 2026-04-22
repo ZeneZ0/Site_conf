@@ -1,3 +1,144 @@
+<script setup>
+import { ref, computed, onMounted } from 'vue'
+import axios from 'axios'
+import UserFilter from './UserFilter.vue'
+
+const items = ref([])
+const stats = ref({})
+const newItem = ref({ name: '', memory: null, chipset: '', picture: null })
+const editItem = ref({})
+const fileInput = ref(null)
+const editFileInput = ref(null)
+const modalImageUrl = ref('')
+const currentUserId = ref(null)
+
+const filters = ref({
+  name: '',
+  memory: '',
+  chipset: ''
+})
+
+const filteredItems = computed(() => {
+  let result = items.value
+  
+  if (filters.value.name) {
+    result = result.filter(item => 
+      item.name.toLowerCase().includes(filters.value.name.toLowerCase())
+    )
+  }
+  
+  if (filters.value.memory) {
+    result = result.filter(item => 
+      item.memory === parseInt(filters.value.memory)
+    )
+  }
+  
+  if (filters.value.chipset) {
+    result = result.filter(item => 
+      item.chipset.toLowerCase().includes(filters.value.chipset.toLowerCase())
+    )
+  }
+  
+  return result
+})
+
+const applyFilters = () => {}
+
+const clearFilters = () => {
+  filters.value = { name: '', memory: '', chipset: '' }
+}
+
+const fetchItems = async () => {
+  let url = '/api/videocards/'
+  if (currentUserId.value) {
+    url += `?user_id=${currentUserId.value}`
+  }
+  const response = await axios.get(url)
+  items.value = response.data
+}
+
+const fetchStats = async () => {
+  let url = '/api/videocards/stats/'
+  if (currentUserId.value) {
+    url += `?user_id=${currentUserId.value}`
+  }
+  const response = await axios.get(url)
+  stats.value = response.data
+}
+
+const onFilterChange = (userId) => {
+  currentUserId.value = userId
+  fetchItems()
+  fetchStats()
+}
+
+const onFileChange = (event) => {
+  const file = event.target.files[0]
+  if (file) {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      newItem.value.picture = e.target.result
+    }
+    reader.readAsDataURL(file)
+  }
+}
+
+const onEditFileChange = (event) => {
+  const file = event.target.files[0]
+  if (file) {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      editItem.value.picture = e.target.result
+    }
+    reader.readAsDataURL(file)
+  }
+}
+
+const onAdd = async () => {
+  await axios.post('/api/videocards/', newItem.value)
+  newItem.value = { name: '', memory: null, chipset: '', picture: null }
+  if (fileInput.value) fileInput.value.value = ''
+  await fetchItems()
+  await fetchStats()
+}
+
+const onEditClick = (item) => {
+  editItem.value = { ...item }
+}
+
+const onUpdate = async () => {
+  await axios.put(`/api/videocards/${editItem.value.id}/`, editItem.value)
+  await fetchItems()
+  await fetchStats()
+}
+
+const onDelete = async (id) => {
+  if (confirm('Удалить?')) {
+    await axios.delete(`/api/videocards/${id}/`)
+    await fetchItems()
+    await fetchStats()
+  }
+}
+
+const openModal = (url) => {
+  modalImageUrl.value = url
+  const modal = new bootstrap.Modal(document.getElementById('imageModal'))
+  modal.show()
+}
+
+const exportToExcel = () => {
+  let url = '/api/videocards/export-excel/'
+  if (currentUserId.value) {
+    url += `?user_id=${currentUserId.value}`
+  }
+  window.open(url, '_blank')
+}
+
+onMounted(() => {
+  fetchItems()
+  fetchStats()
+})
+</script>
 <template>
   <div class="card">
     <div class="card-header">
@@ -155,144 +296,3 @@
   </div>
 </template>
 
-<script setup>
-import { ref, computed, onMounted } from 'vue'
-import axios from 'axios'
-import UserFilter from './UserFilter.vue'
-
-const items = ref([])
-const stats = ref({})
-const newItem = ref({ name: '', memory: null, chipset: '', picture: null })
-const editItem = ref({})
-const fileInput = ref(null)
-const editFileInput = ref(null)
-const modalImageUrl = ref('')
-const currentUserId = ref(null)
-
-const filters = ref({
-  name: '',
-  memory: '',
-  chipset: ''
-})
-
-const filteredItems = computed(() => {
-  let result = items.value
-  
-  if (filters.value.name) {
-    result = result.filter(item => 
-      item.name.toLowerCase().includes(filters.value.name.toLowerCase())
-    )
-  }
-  
-  if (filters.value.memory) {
-    result = result.filter(item => 
-      item.memory === parseInt(filters.value.memory)
-    )
-  }
-  
-  if (filters.value.chipset) {
-    result = result.filter(item => 
-      item.chipset.toLowerCase().includes(filters.value.chipset.toLowerCase())
-    )
-  }
-  
-  return result
-})
-
-const applyFilters = () => {}
-
-const clearFilters = () => {
-  filters.value = { name: '', memory: '', chipset: '' }
-}
-
-const fetchItems = async () => {
-  let url = '/api/videocards/'
-  if (currentUserId.value) {
-    url += `?user_id=${currentUserId.value}`
-  }
-  const response = await axios.get(url)
-  items.value = response.data
-}
-
-const fetchStats = async () => {
-  let url = '/api/videocards/stats/'
-  if (currentUserId.value) {
-    url += `?user_id=${currentUserId.value}`
-  }
-  const response = await axios.get(url)
-  stats.value = response.data
-}
-
-const onFilterChange = (userId) => {
-  currentUserId.value = userId
-  fetchItems()
-  fetchStats()
-}
-
-const onFileChange = (event) => {
-  const file = event.target.files[0]
-  if (file) {
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      newItem.value.picture = e.target.result
-    }
-    reader.readAsDataURL(file)
-  }
-}
-
-const onEditFileChange = (event) => {
-  const file = event.target.files[0]
-  if (file) {
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      editItem.value.picture = e.target.result
-    }
-    reader.readAsDataURL(file)
-  }
-}
-
-const onAdd = async () => {
-  await axios.post('/api/videocards/', newItem.value)
-  newItem.value = { name: '', memory: null, chipset: '', picture: null }
-  if (fileInput.value) fileInput.value.value = ''
-  await fetchItems()
-  await fetchStats()
-}
-
-const onEditClick = (item) => {
-  editItem.value = { ...item }
-}
-
-const onUpdate = async () => {
-  await axios.put(`/api/videocards/${editItem.value.id}/`, editItem.value)
-  await fetchItems()
-  await fetchStats()
-}
-
-const onDelete = async (id) => {
-  if (confirm('Удалить?')) {
-    await axios.delete(`/api/videocards/${id}/`)
-    await fetchItems()
-    await fetchStats()
-  }
-}
-
-const openModal = (url) => {
-  modalImageUrl.value = url
-  const modal = new bootstrap.Modal(document.getElementById('imageModal'))
-  modal.show()
-}
-
-const exportToExcel = () => {
-  let url = '/api/videocards/export-excel/'
-  if (currentUserId.value) {
-    url += `?user_id=${currentUserId.value}`
-  }
-  window.open(url, '_blank')
-}
-
-onMounted(() => {
-  fetchItems()
-  fetchStats()
-})
-</script>

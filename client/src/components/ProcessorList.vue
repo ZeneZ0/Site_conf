@@ -1,3 +1,144 @@
+<script setup>
+import { ref, computed, onMounted } from 'vue'
+import axios from 'axios'
+import UserFilter from './UserFilter.vue'
+
+const items = ref([])
+const stats = ref({})
+const newItem = ref({ name: '', cores: null, frequency: null, picture: null })
+const editItem = ref({})
+const fileInput = ref(null)
+const editFileInput = ref(null)
+const modalImageUrl = ref('')
+const currentUserId = ref(null)
+
+const filters = ref({
+  name: '',
+  cores: '',
+  frequency: ''
+})
+
+const filteredItems = computed(() => {
+  let result = items.value
+  
+  if (filters.value.name) {
+    result = result.filter(item => 
+      item.name.toLowerCase().includes(filters.value.name.toLowerCase())
+    )
+  }
+  
+  if (filters.value.cores) {
+    result = result.filter(item => 
+      item.cores === parseInt(filters.value.cores)
+    )
+  }
+  
+  if (filters.value.frequency) {
+    result = result.filter(item => 
+      item.frequency === parseFloat(filters.value.frequency)
+    )
+  }
+  
+  return result
+})
+
+const applyFilters = () => {}
+
+const clearFilters = () => {
+  filters.value = { name: '', cores: '', frequency: '' }
+}
+
+const fetchItems = async () => {
+  let url = '/api/processors/'
+  if (currentUserId.value) {
+    url += `?user_id=${currentUserId.value}`
+  }
+  const response = await axios.get(url)
+  items.value = response.data
+}
+
+const fetchStats = async () => {
+  let url = '/api/processors/stats/'
+  if (currentUserId.value) {
+    url += `?user_id=${currentUserId.value}`
+  }
+  const response = await axios.get(url)
+  stats.value = response.data
+}
+
+const onFilterChange = (userId) => {
+  currentUserId.value = userId
+  fetchItems()
+  fetchStats()
+}
+
+const onFileChange = (event) => {
+  const file = event.target.files[0]
+  if (file) {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      newItem.value.picture = e.target.result
+    }
+    reader.readAsDataURL(file)
+  }
+}
+
+const onEditFileChange = (event) => {
+  const file = event.target.files[0]
+  if (file) {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      editItem.value.picture = e.target.result
+    }
+    reader.readAsDataURL(file)
+  }
+}
+
+const onAdd = async () => {
+  await axios.post('/api/processors/', newItem.value)
+  newItem.value = { name: '', cores: null, frequency: null, picture: null }
+  if (fileInput.value) fileInput.value.value = ''
+  await fetchItems()
+  await fetchStats()
+}
+
+const onEditClick = (item) => {
+  editItem.value = { ...item }
+}
+
+const onUpdate = async () => {
+  await axios.put(`/api/processors/${editItem.value.id}/`, editItem.value)
+  await fetchItems()
+  await fetchStats()
+}
+
+const onDelete = async (id) => {
+  if (confirm('Удалить?')) {
+    await axios.delete(`/api/processors/${id}/`)
+    await fetchItems()
+    await fetchStats()
+  }
+}
+
+const openModal = (url) => {
+  modalImageUrl.value = url
+  const modal = new bootstrap.Modal(document.getElementById('imageModal'))
+  modal.show()
+}
+
+const exportToExcel = () => {
+  let url = '/api/processors/export-excel/'
+  if (currentUserId.value) {
+    url += `?user_id=${currentUserId.value}`
+  }
+  window.open(url, '_blank')
+}
+
+onMounted(() => {
+  fetchItems()
+  fetchStats()
+})
+</script>
 <template>
   <div class="card">
     <div class="card-header">
@@ -155,144 +296,3 @@
   </div>
 </template>
 
-<script setup>
-import { ref, computed, onMounted } from 'vue'
-import axios from 'axios'
-import UserFilter from './UserFilter.vue'
-
-const items = ref([])
-const stats = ref({})
-const newItem = ref({ name: '', cores: null, frequency: null, picture: null })
-const editItem = ref({})
-const fileInput = ref(null)
-const editFileInput = ref(null)
-const modalImageUrl = ref('')
-const currentUserId = ref(null)
-
-const filters = ref({
-  name: '',
-  cores: '',
-  frequency: ''
-})
-
-const filteredItems = computed(() => {
-  let result = items.value
-  
-  if (filters.value.name) {
-    result = result.filter(item => 
-      item.name.toLowerCase().includes(filters.value.name.toLowerCase())
-    )
-  }
-  
-  if (filters.value.cores) {
-    result = result.filter(item => 
-      item.cores === parseInt(filters.value.cores)
-    )
-  }
-  
-  if (filters.value.frequency) {
-    result = result.filter(item => 
-      item.frequency === parseFloat(filters.value.frequency)
-    )
-  }
-  
-  return result
-})
-
-const applyFilters = () => {}
-
-const clearFilters = () => {
-  filters.value = { name: '', cores: '', frequency: '' }
-}
-
-const fetchItems = async () => {
-  let url = '/api/processors/'
-  if (currentUserId.value) {
-    url += `?user_id=${currentUserId.value}`
-  }
-  const response = await axios.get(url)
-  items.value = response.data
-}
-
-const fetchStats = async () => {
-  let url = '/api/processors/stats/'
-  if (currentUserId.value) {
-    url += `?user_id=${currentUserId.value}`
-  }
-  const response = await axios.get(url)
-  stats.value = response.data
-}
-
-const onFilterChange = (userId) => {
-  currentUserId.value = userId
-  fetchItems()
-  fetchStats()
-}
-
-const onFileChange = (event) => {
-  const file = event.target.files[0]
-  if (file) {
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      newItem.value.picture = e.target.result
-    }
-    reader.readAsDataURL(file)
-  }
-}
-
-const onEditFileChange = (event) => {
-  const file = event.target.files[0]
-  if (file) {
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      editItem.value.picture = e.target.result
-    }
-    reader.readAsDataURL(file)
-  }
-}
-
-const onAdd = async () => {
-  await axios.post('/api/processors/', newItem.value)
-  newItem.value = { name: '', cores: null, frequency: null, picture: null }
-  if (fileInput.value) fileInput.value.value = ''
-  await fetchItems()
-  await fetchStats()
-}
-
-const onEditClick = (item) => {
-  editItem.value = { ...item }
-}
-
-const onUpdate = async () => {
-  await axios.put(`/api/processors/${editItem.value.id}/`, editItem.value)
-  await fetchItems()
-  await fetchStats()
-}
-
-const onDelete = async (id) => {
-  if (confirm('Удалить?')) {
-    await axios.delete(`/api/processors/${id}/`)
-    await fetchItems()
-    await fetchStats()
-  }
-}
-
-const openModal = (url) => {
-  modalImageUrl.value = url
-  const modal = new bootstrap.Modal(document.getElementById('imageModal'))
-  modal.show()
-}
-
-const exportToExcel = () => {
-  let url = '/api/processors/export-excel/'
-  if (currentUserId.value) {
-    url += `?user_id=${currentUserId.value}`
-  }
-  window.open(url, '_blank')
-}
-
-onMounted(() => {
-  fetchItems()
-  fetchStats()
-})
-</script>
