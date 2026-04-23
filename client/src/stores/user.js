@@ -24,7 +24,6 @@ const setCsrfToken = () => {
 }
 
 setCsrfToken()
-
 axios.defaults.withCredentials = true
 
 export const useUserStore = defineStore('user', {
@@ -36,6 +35,7 @@ export const useUserStore = defineStore('user', {
       is_superuser: false
     },
     otpRequired: true,
+    otpKey: null,           // добавлено поле для хранения ключа
     loading: false,
     error: null
   }),
@@ -44,7 +44,8 @@ export const useUserStore = defineStore('user', {
     isAuthenticated: (state) => state.user.is_authenticated,
     isSuperuser: (state) => state.user.is_superuser,
     username: (state) => state.user.username,
-    getOtpRequired: (state) => state.otpRequired
+    getOtpRequired: (state) => state.otpRequired,
+    getOtpKey: (state) => state.otpKey
   },
 
   actions: {
@@ -98,6 +99,7 @@ export const useUserStore = defineStore('user', {
         const response = await axios.post('/api/user/verify-otp/', { otp_code: otpCode })
         if (response.data.success) {
           this.otpRequired = false
+          this.otpKey = null   // очищаем ключ после успешной проверки
           return { success: true }
         }
         return { success: false, error: 'Неверный OTP код' }
@@ -114,7 +116,11 @@ export const useUserStore = defineStore('user', {
       try {
         setCsrfToken()
         const response = await axios.get('/api/user/generate-otp/')
-        return { success: true, otp_key: response.data.otp_key }
+        if (response.data.otp_key) {
+          this.otpKey = response.data.otp_key   // сохраняем ключ в store
+          return { success: true, otp_key: response.data.otp_key }
+        }
+        return { success: false, error: 'Не удалось получить OTP ключ' }
       } catch (error) {
         console.error('Ошибка генерации OTP:', error)
         return { success: false, error: 'Ошибка генерации OTP ключа' }
@@ -134,6 +140,7 @@ export const useUserStore = defineStore('user', {
           is_superuser: false
         }
         this.otpRequired = true
+        this.otpKey = null
       } catch (error) {
         console.error('Ошибка выхода:', error)
       }

@@ -4,3 +4,7 @@ pytest-django
 model-bakery
 pyotp
 django-redis
+django-cors-headers
+Pillow
+openpyxl
+Faker

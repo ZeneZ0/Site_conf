@@ -10,6 +10,7 @@ const handleLogout = async () => {
   router.push('/login')
 }
 </script>
+
 <template>
   <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center">
@@ -30,4 +31,3 @@ const handleLogout = async () => {
     <router-view />
   </div>
 </template>
-
