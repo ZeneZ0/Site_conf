@@ -23,7 +23,7 @@ const router = createRouter({
 router.beforeEach(async (to, from) => {
   const userStore = useUserStore()
   
-  if (!userStore.user.is_authenticated && !userStore.user.id) {
+  if (!userStore.user.is_authenticated) {
     await userStore.fetchUserInfo()
   }
   

@@ -35,9 +35,7 @@ export const useUserStore = defineStore('user', {
       is_superuser: false
     },
     otpRequired: true,
-    otpKey: null,           // добавлено поле для хранения ключа
-    loading: false,
-    error: null
+    otpKey: null
   }),
 
   getters: {
@@ -50,100 +48,62 @@ export const useUserStore = defineStore('user', {
 
   actions: {
     async fetchUserInfo() {
-      this.loading = true
-      try {
-        setCsrfToken()
-        const response = await axios.get('/api/user/info/')
-        this.user = {
-          id: response.data.id,
-          username: response.data.username,
-          is_authenticated: response.data.is_authenticated,
-          is_superuser: response.data.is_superuser
-        }
-        
-        if (this.user.is_authenticated) {
-          const otpStatus = await axios.get('/api/user/otp-status/')
-          this.otpRequired = otpStatus.data.otp_required
-        }
-      } catch (error) {
-        console.error('Ошибка получения информации о пользователе:', error)
-        this.error = error
-      } finally {
-        this.loading = false
+      setCsrfToken()
+      const response = await axios.get('/api/user/info/')
+      this.user = {
+        id: response.data.id,
+        username: response.data.username,
+        is_authenticated: response.data.is_authenticated,
+        is_superuser: response.data.is_superuser
+      }
+      if (this.user.is_authenticated) {
+        const otpStatus = await axios.get('/api/user/otp-status/')
+        this.otpRequired = otpStatus.data.otp_required
       }
     },
 
     async login(username, password) {
-      this.loading = true
-      this.error = null
-      try {
-        setCsrfToken()
-        const response = await axios.post('/api/user/login/', { username, password })
-        if (response.data.success) {
-          await this.fetchUserInfo()
-          return { success: true, requires_otp: response.data.requires_otp }
-        }
-        return { success: false, error: 'Неверный логин или пароль' }
-      } catch (error) {
-        console.error('Ошибка входа:', error)
-        return { success: false, error: 'Ошибка сервера' }
-      } finally {
-        this.loading = false
+      setCsrfToken()
+      const response = await axios.post('/api/user/login/', { username, password })
+      if (response.data.success) {
+        await this.fetchUserInfo()
+        return { success: true, requires_otp: response.data.requires_otp }
       }
+      return { success: false }
     },
 
     async verifyOtp(otpCode) {
-      this.loading = true
-      try {
-        setCsrfToken()
-        const response = await axios.post('/api/user/verify-otp/', { otp_code: otpCode })
-        if (response.data.success) {
-          this.otpRequired = false
-          this.otpKey = null   // очищаем ключ после успешной проверки
-          return { success: true }
-        }
-        return { success: false, error: 'Неверный OTP код' }
-      } catch (error) {
-        console.error('Ошибка проверки OTP:', error)
-        return { success: false, error: 'Ошибка сервера' }
-      } finally {
-        this.loading = false
+      setCsrfToken()
+      const response = await axios.post('/api/user/verify-otp/', { otp_code: otpCode })
+      if (response.data.success) {
+        this.otpRequired = false
+        this.otpKey = null
+        return { success: true }
       }
+      return { success: false }
     },
 
     async generateOtp() {
-      this.loading = true
-      try {
-        setCsrfToken()
-        const response = await axios.get('/api/user/generate-otp/')
-        if (response.data.otp_key) {
-          this.otpKey = response.data.otp_key   // сохраняем ключ в store
-          return { success: true, otp_key: response.data.otp_key }
-        }
-        return { success: false, error: 'Не удалось получить OTP ключ' }
-      } catch (error) {
-        console.error('Ошибка генерации OTP:', error)
-        return { success: false, error: 'Ошибка генерации OTP ключа' }
-      } finally {
-        this.loading = false
+      setCsrfToken()
+      const response = await axios.get('/api/user/generate-otp/')
+      if (response.data.otp_key) {
+        this.otpKey = response.data.otp_key
+        return { success: true, otp_key: response.data.otp_key }
       }
+      return { success: false }
     },
 
     async logout() {
-      try {
-        setCsrfToken()
-        await axios.post('/api/user/logout/')
-        this.user = {
-          id: null,
-          username: '',
-          is_authenticated: false,
-          is_superuser: false
-        }
-        this.otpRequired = true
-        this.otpKey = null
-      } catch (error) {
-        console.error('Ошибка выхода:', error)
+      setCsrfToken()
+      await axios.post('/api/user/logout/')
+      this.user = {
+        id: null,
+        username: '',
+        is_authenticated: false,
+        is_superuser: false
       }
+      this.otpRequired = true
+      this.otpKey = null
     }
   }
 })

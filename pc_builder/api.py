@@ -10,10 +10,10 @@ from django.shortcuts import get_object_or_404
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
-from .models import Processor, VideoCard, Motherboard, ComputerBuild, UserFavorite, UserProfile
+from .models import Processor, VideoCard, Motherboard, ComputerBuild, UserProfile
 from .serializers import (
     ProcessorSerializer, VideoCardSerializer, MotherboardSerializer,
-    ComputerBuildSerializer, UserFavoriteSerializer
+    ComputerBuildSerializer
 )
 import pyotp
 import openpyxl
@@ -256,49 +256,6 @@ class ComputerBuildViewSet(viewsets.ModelViewSet):
             content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         )
         response['Content-Disposition'] = 'attachment; filename=builds.xlsx'
-        wb.save(response)
-        return response
-
-class UserFavoriteViewSet(viewsets.ModelViewSet):
-    queryset = UserFavorite.objects.all()
-    serializer_class = UserFavoriteSerializer
-    permission_classes = [IsAuthenticated, OTPRequired]
-
-    @action(detail=False, methods=["GET"], url_path="stats")
-    def stats(self, request):
-        qs = self.get_queryset()
-        stats = qs.aggregate(
-            count=Count('id'),
-        )
-        return Response(stats)
-
-    @action(detail=False, methods=["GET"], url_path="export-excel")
-    def export_excel(self, request):
-        qs = self.get_queryset()
-        
-        wb = openpyxl.Workbook()
-        ws = wb.active
-        ws.title = "Избранное"
-        
-        headers = ['ID', 'Сборка', 'Пользователь', 'Дата создания']
-        for col, header in enumerate(headers, 1):
-            cell = ws.cell(row=1, column=col, value=header)
-            cell.font = Font(bold=True)
-            cell.alignment = Alignment(horizontal='center')
-        
-        for row, item in enumerate(qs, 2):
-            ws.cell(row=row, column=1, value=item.id)
-            ws.cell(row=row, column=2, value=item.build.name if item.build else '')
-            ws.cell(row=row, column=3, value=item.user_id)
-            ws.cell(row=row, column=4, value=item.created_at.strftime('%Y-%m-%d %H:%M') if item.created_at else '')
-        
-        for col in range(1, 5):
-            ws.column_dimensions[openpyxl.utils.get_column_letter(col)].width = 20
-        
-        response = HttpResponse(
-            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        )
-        response['Content-Disposition'] = 'attachment; filename=favorites.xlsx'
         wb.save(response)
         return response
 

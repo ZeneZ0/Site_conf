@@ -11,12 +11,8 @@ const selectedUserId = ref(null)
 
 const fetchUsers = async () => {
   if (userStore.isSuperuser) {
-    try {
-      const response = await axios.get('/api/user/list_users/')
-      users.value = response.data
-    } catch (error) {
-      console.error('Ошибка получения списка пользователей:', error)
-    }
+    const response = await axios.get('/api/user/list_users/')
+    users.value = response.data
   }
 }
 
@@ -28,6 +24,7 @@ onMounted(() => {
   fetchUsers()
 })
 </script>
+
 <template>
   <div v-if="userStore.isSuperuser" class="mb-3">
     <label class="form-label">Фильтр по пользователю:</label>
@@ -37,4 +34,3 @@ onMounted(() => {
     </select>
   </div>
 </template>
-

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Processor, VideoCard, Motherboard, ComputerBuild, UserFavorite
+from .models import Processor, VideoCard, Motherboard, ComputerBuild
 
 class ProcessorSerializer(serializers.ModelSerializer):
     class Meta:
@@ -57,13 +57,3 @@ class ComputerBuildSerializer(serializers.ModelSerializer):
         if 'request' in self.context:
             validated_data['user'] = self.context['request'].user
         return super().create(validated_data)
-
-class UserFavoriteSerializer(serializers.ModelSerializer):
-    build = ComputerBuildSerializer(read_only=True)
-    build_id = serializers.PrimaryKeyRelatedField(
-        queryset=ComputerBuild.objects.all(), source='build', write_only=True
-    )
-
-    class Meta:
-        model = UserFavorite
-        fields = '__all__'

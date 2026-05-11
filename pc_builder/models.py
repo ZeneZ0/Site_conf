@@ -42,14 +42,6 @@ class ComputerBuild(models.Model):
     def __str__(self):
         return self.name
 
-class UserFavorite(models.Model):
-    build = models.ForeignKey(ComputerBuild, on_delete=models.CASCADE)
-    user_id = models.IntegerField()
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f"User {self.user_id} - {self.build.name}"
-
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     otp_key = models.CharField(max_length=100, blank=True, null=True)

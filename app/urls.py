@@ -5,7 +5,7 @@ from django.conf.urls.static import static
 from rest_framework.routers import DefaultRouter
 from pc_builder.api import (
     ProcessorViewSet, VideoCardViewSet, MotherboardViewSet,
-    ComputerBuildViewSet, UserFavoriteViewSet, UserViewSet
+    ComputerBuildViewSet, UserViewSet
 )
 
 router = DefaultRouter()
@@ -13,7 +13,6 @@ router.register(r'processors', ProcessorViewSet)
 router.register(r'videocards', VideoCardViewSet)
 router.register(r'motherboards', MotherboardViewSet)
 router.register(r'builds', ComputerBuildViewSet)
-router.register(r'favorites', UserFavoriteViewSet)
 router.register(r'user', UserViewSet, basename='user')
 
 urlpatterns = [
